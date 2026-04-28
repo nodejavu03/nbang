@@ -731,6 +731,54 @@ function applyWeight(){
   closeLadder();
 }
 
+
+/* ===== PWA 홈화면 추가 ===== */
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showBanner();
+});
+
+window.addEventListener('appinstalled', () => { dismissBanner(); });
+
+function showBanner() {
+  if(sessionStorage.getItem('pwaDismissed')) return;
+  if(window.matchMedia('(display-mode: standalone)').matches) return;
+  if(navigator.standalone) return;
+  setTimeout(() => {
+    const b = document.getElementById('pwaBanner');
+    if(b){ b.classList.add('show'); document.body.classList.add('has-banner'); }
+  }, 1500);
+}
+
+function dismissBanner() {
+  const b = document.getElementById('pwaBanner');
+  if(b){ b.classList.remove('show'); document.body.classList.remove('has-banner'); }
+  sessionStorage.setItem('pwaDismissed','1');
+}
+
+document.getElementById('pwaAddBtn').addEventListener('click', async () => {
+  if(deferredPrompt) {
+    deferredPrompt.prompt();
+    const {outcome} = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    dismissBanner();
+  } else {
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    alert(isIos
+      ? 'Safari 하단 공유 버튼(□↑)을 탭한 후\n"홈 화면에 추가"를 선택하세요'
+      : '브라우저 메뉴(⋮)에서\n"앱 설치" 또는 "홈 화면에 추가"를 선택하세요');
+  }
+});
+
+const _isIosSafari = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  && /safari/i.test(navigator.userAgent)
+  && !/(chrome|crios|fxios)/i.test(navigator.userAgent);
+if(_isIosSafari && !navigator.standalone) showBanner();
+setTimeout(() => { if(!deferredPrompt && !_isIosSafari) showBanner(); }, 2500);
+
 </script>
 
 <div id="pwaBanner">
